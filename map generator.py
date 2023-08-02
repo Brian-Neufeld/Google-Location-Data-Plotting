@@ -1,6 +1,7 @@
 import json
 import math
 import time
+import datetime
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -18,41 +19,125 @@ Draw_line = True
 Animated = True
 Frames = 300
 
+# Spline Control Points ####################
+# zoom 100% fills image with globe, 0% is 0.005, > 100% shows entire globe with blank space around it. 
+Zoom = [100, 1, 0]
+Zoom_frames = [0, 200, 299]
+Zoom_slopes = [-1, 0, 0]
 
-datasource = open("e:\Programming\Projects\maps\Location History 28-07-2023.json","r")
+Lat_center_points = [43, 43]
+Lat_center_frames = [0, 200]
+Lat_center_slopes = [0, 0]
+
+Long_center_points = [-83, -83]
+Long_center_frames = [0, 200]
+Long_center_slopes = [0, 0]
+
+
+
+# Functions ###########################
+
+Zoom_cubic_coefficents = np.zeros((len(Zoom)-1, 4))
+Zoom_level = np.zeros(Frames)
+
+for x in range(len(Zoom_frames)-1):
+    M = [
+    [Zoom_frames[x]**3,Zoom_frames[x]**2,Zoom_frames[x],1],
+    [Zoom_frames[x+1]**3,Zoom_frames[x+1]**2,Zoom_frames[x+1],1],
+    [3*Zoom_frames[x]**2,2*Zoom_frames[x],1,0],
+    [3*Zoom_frames[x+1]**2,2*Zoom_frames[x+1],1,0]
+    ]
+
+    y = [Zoom[x],Zoom[x+1],Zoom_slopes[x],Zoom_slopes[x+1]]
+
+    solution = np.matmul(np.linalg.inv(M), y)
+    Zoom_cubic_coefficents[x] = solution
+
+    
+
+    for Frame in range(Frames):
+        if Zoom_frames[x] <= Frame <= Zoom_frames[x+1]:  
+            #Zoom_level[Frame] = (Zoom_cubic_coefficents[x][0]*Frame**3 + Zoom_cubic_coefficents[x][1]*Frame**2 + Zoom_cubic_coefficents[x][2]*Frame + Zoom_cubic_coefficents[x][3])
+
+            Zoom_level[Frame] = 0.005 + ((Zoom_cubic_coefficents[x][0]*Frame**3 + Zoom_cubic_coefficents[x][1]*Frame**2 + Zoom_cubic_coefficents[x][2]*Frame + Zoom_cubic_coefficents[x][3]) - 0) * (180 - 0.005) / (100 - 0)
+
+
+
+#print(Zoom_level)
+#time.sleep(100)
+
+
+    
+
+def Lat_control ():
+    Lat_cubic_coefficents = np.zeros((len(Lat_center_points)-1, 4))
+
+    for x in range(len(Lat_center_points)-1):
+        M = [
+        [Lat_center_frames[x]**3,Lat_center_frames[x]**2,Lat_center_frames[x],1],
+        [Lat_center_frames[x+1]**3,Lat_center_frames[x+1]**2,Lat_center_frames[x+1],1],
+        [3*Lat_center_frames[x]**2,2*Lat_center_frames[x],1,0],
+        [3*Lat_center_frames[x+1]**2,2*Lat_center_frames[x+1],1,0]
+        ]
+
+        y = [Lat_center_points[x],Lat_center_points[x+1],Lat_center_slopes[x],Lat_center_slopes[x+1]]
+
+        solution = np.matmul(np.linalg.inv(M), y)
+
+        Lat_cubic_coefficents[x] = solution
+
+    print(Lat_cubic_coefficents)
+
+def Long_control ():
+    Long_cubic_coefficents = np.zeros((len(Long_center_points)-1, 4))
+
+    for x in range(len(Long_center_points)-1):
+        M = [
+        [Long_center_frames[x]**3,Long_center_frames[x]**2,Long_center_frames[x],1],
+        [Long_center_frames[x+1]**3,Long_center_frames[x+1]**2,Long_center_frames[x+1],1],
+        [3*Long_center_frames[x]**2,2*Long_center_frames[x],1,0],
+        [3*Long_center_frames[x+1]**2,2*Long_center_frames[x+1],1,0]
+        ]
+
+        y = [Long_center_points[x],Long_center_points[x+1],Long_center_slopes[x],Long_center_slopes[x+1]]
+
+        solution = np.matmul(np.linalg.inv(M), y)
+
+        Long_cubic_coefficents[x] = solution
+
+    print(Long_cubic_coefficents)
+
+#Zoom_control()
+Lat_control()
+Long_control()
+
+
+#
+datasource = open("E:\Programming\Projects\maps\Location History 28-07-2023.json","r")
 
 datadict = json.load(datasource)
 
 locationlist = datadict["locations"]
 
 
-pairs = [(int(i["latitudeE7"])/1e7,     # Latitude
-          int(i["longitudeE7"])/1e7,    # Longitude
-          int((i["timestamp"][0:4])),   # Year
-          int((i["timestamp"][5:7])),   # Month
-          int((i["timestamp"][8:10])),  # Day
-          int((i["timestamp"][11:13])), # Hour
-          int((i["timestamp"][14:16])), # Minute
-          int((i["timestamp"][17:19]))) # Second
+pairs = [(int(i["latitudeE7"])/1e7,      # Latitude
+          int(i["longitudeE7"])/1e7,     # Longitude
+          int((i["timestamp"][0:4])),    # Year
+          int((i["timestamp"][5:7])),    # Month
+          int((i["timestamp"][8:10])),   # Day
+          int((i["timestamp"][11:13])),  # Hour
+          int((i["timestamp"][14:16])),  # Minute
+          int((i["timestamp"][17:19])), # Second
+          int((i["accuracy"])))  # Accuracy 
           for i in locationlist if "latitudeE7" in i.keys()]
 
 
 
-Frames = 300
 
-lat_height_points = [180, 20, 10, 1, 0.5, 0.01]
-lat_height_frames = [0, 75, 125, 225, 250, 299]
 
-cs_lat_height = interpolate.CubicSpline(lat_height_frames, lat_height_points)
-
-xs = np.arange(0, Frames, 1)
-
-plt.plot(xs, cs_lat_height(xs))
-plt.show()
-
-for k in range(0, 1, 1):
+for k in range(0, Frames, 1):
     print(k)
-    resolution = (1080*4, 1080*4)
+    resolution = (1080*2, 1080*2)
     if k < 200:
         p1_lat = 43.467034 #* k / 200
         p1_long = -80.518941 #* k / 200
@@ -60,7 +145,7 @@ for k in range(0, 1, 1):
         p1_lat = 43.467034 
         p1_long = -80.518941 
 
-    lat_height = 5 #cs_lat_height(k)
+    lat_height = Zoom_level[295] #cs_lat_height(k)
     long_width = resolution[0]/resolution[1] * lat_height
 
 
@@ -79,12 +164,13 @@ for k in range(0, 1, 1):
     for coords in pairs:
         if lat1 <= coords[0] <=lat2:
             if long1 <= coords[1] <= long2:
-                coords_to_use.append(coords)
+                if coords[8] <= k:
+                    coords_to_use.append(coords)
 
     img = Image.new('RGB', (resolution[0], resolution[1]), 'black')
 
 
-    
+    '''
     for i in range(-180, 180, 5):
         coords_to_use.append((5*i,0))
 
@@ -93,24 +179,19 @@ for k in range(0, 1, 1):
 
     for i in range(-180, 180, 5):
         coords_to_use.append((0,5*i))
-    
+    '''
 
     draw = ImageDraw.Draw(img)
     for i in range(len(coords_to_use)):
         if i < len(coords_to_use)-1:
             distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[i][0] - coords_to_use[i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[i][0])) * math.cos(math.radians(coords_to_use[i+1][0])) * (math.sin(math.radians(coords_to_use[i][1] - coords_to_use[i+1][1])/2)**2)))
-        
-            '''if distance < 500000:
-                draw.line(
-                (
-                ((coords_to_use[i][1]-p1_long)/stepsizelong)+(resolution[0]/2),
-                (0-(coords_to_use[i][0]-p1_lat)/stepsizelat)+(resolution[1]/2), 
-                ((coords_to_use[i+1][1]-p1_long)/stepsizelong)+(resolution[0]/2),
-                (0-(coords_to_use[i+1][0]-p1_lat)/stepsizelat)+(resolution[1]/2)
-                ), 
-                fill=(round(i/len(coords_to_use)*255),round((len(coords_to_use)-i)/len(coords_to_use)*255),0))'''
-            
-            if distance < 500:
+            t = (coords_to_use[i][2], coords_to_use[i][3], coords_to_use[i][4], coords_to_use[i][5], coords_to_use[i][6], coords_to_use[i][7], 0, 0, 0)
+            t2 = (coords_to_use[i+1][2], coords_to_use[i+1][3], coords_to_use[i+1][4], coords_to_use[i+1][5], coords_to_use[i+1][6], coords_to_use[i+1][7], 0, 0, 0)
+            #print(t)
+
+            time_between = time.mktime(t2) - time.mktime(t)
+            #print(time_between)
+            if time_between <= 30:
                 lat_offset = math.sin(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
                 long_offset = (math.cos(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i][1]-p1_long))
 
@@ -142,6 +223,6 @@ for k in range(0, 1, 1):
 
 
 
-    img.save("e:\Programming\Projects\maps\Frames\Sphere_zoom" + str(k) + ".png")
+    img.save("e:\Programming\Projects\maps\Frames\Zoom 295- accuracy" + str(k) + ".png")
 
     
