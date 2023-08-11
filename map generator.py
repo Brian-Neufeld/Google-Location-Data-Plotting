@@ -1,4 +1,4 @@
-import orjson as json
+import orjson
 import math
 import time
 import datetime
@@ -117,12 +117,14 @@ if Animated == True:
 
 print(Zoom_level)
 
-#
-datasource = open("E:\Programming\Projects\maps\Location History 09-08-2023.json","r")
+#datasource = "E:\Programming\Projects\maps\Location History 09-08-2023.json"
 
-datadict = json.load(datasource)
+#datadict = json.loads(datasource)
 
-locationlist = datadict["locations"]
+with open("E:\Programming\Projects\maps\Location History 09-08-2023.json", "rb") as f:
+    json_data = orjson.loads(f.read())
+
+locationlist = json_data["locations"]
 
 
 pairs = [(int(i["latitudeE7"])/1e7,      # Latitude
@@ -251,7 +253,7 @@ if Animated == False:
     for coords in pairs:
         if lat1 <= coords[0] <=lat2:
             if long1 <= coords[1] <= long2:
-                if coords[8] <= 15:
+                if coords[8] <= 10:
                     coords_to_use.append(coords)
 
     img = Image.new('RGB', (resolution[0], resolution[1]), 'black')
