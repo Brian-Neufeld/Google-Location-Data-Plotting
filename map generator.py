@@ -25,11 +25,11 @@ End_Datetime = [2023,7,28,23,59,59] # Y,M,D,H,M,S
 Draw_Line = True
 Animated = False
 Frames = 300
-Resolution = (1080*4, 1080*4)
-Minimumm_Accuracy = 8
+Resolution = (1080*8, 1080*8)
+Minimumm_Accuracy = 12
 p1_lat = 43.462313 
 p1_long = -80.519346  
-GPS_Data_Files = ["E:\Programming\Projects\maps\Location History 09-08-2023.json"]#, "E:\Programming\Projects\maps\Location History 17-03-2020.json"]
+GPS_Data_Files = ["E:\Programming\Projects\maps\Location History 29-08-2023.json", "E:\Programming\Projects\maps\Location History 08-07-2023.json"]
 
 # Spline Control Points ####################
 Zoom = [100, 1, 0]
@@ -53,9 +53,6 @@ for index, file in np.ndenumerate(GPS_Data_Files):
         json_data1 = orjson.loads(f.read())
         
         array = json_data1["locations"]
-
-        print(index[0])
-
         location_lists.append(array)
 
 
@@ -128,18 +125,15 @@ def Long_control ():
 
     print(Long_cubic_coefficents)
 
+
 if Animated == True:
     Zoom_control()
     Lat_control()
     Long_control()
 
-#datasource = "E:\Programming\Projects\maps\Location History 09-08-2023.json"
-
-#datadict = json.loads(datasource)
-
 pairs = []
 
-for x in range(len(location_lists)):
+for y in range(len(location_lists)):
     a = [(int(i["latitudeE7"])/1e7,      # Latitude
             int(i["longitudeE7"])/1e7,     # Longitude
             int((i["timestamp"][0:4])),    # Year
@@ -149,11 +143,14 @@ for x in range(len(location_lists)):
             int((i["timestamp"][14:16])),  # Minute
             int((i["timestamp"][17:19])), # Second
             int((i["accuracy"])))  # Accuracy 
-            for i in location_lists[x] if "latitudeE7" in i.keys()]
-    
+            for i in location_lists[y] if "latitudeE7" in i.keys()]
+              
     pairs.append(a)
 
-
+print(len(pairs))
+print(len(pairs[0]))
+print(len(pairs[1]))
+time.sleep(1)
 
 # For an animation ####################
 if Animated == True:
@@ -216,15 +213,30 @@ if Animated == True:
                     long_offset2 = (math.cos(math.radians(coords_to_use[i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i+1][1]-p1_long))
 
                     if Draw_Line == True:
-                        draw1.line(
-                            (
-                            long_offset*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset*Resolution[1]/2+Resolution[1]/2,
-                            long_offset2*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset2*Resolution[1]/2+Resolution[1]/2
-                            ), 
-                            fill=(255,255,255)
-                        )
+                        print(time.mktime(t))
+                        print(time.mktime((2023, 11, 1)))
+                        time.sleep(1)
+
+                        if time.mktime(t) >= time.mktime((2023, 11, 1)):
+                            draw1.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=(255,0,0)
+                            )
+                        else:
+                            draw1.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=(0,0,255)
+                            )
 
                     else:
                         draw1.point(
@@ -296,16 +308,18 @@ if Animated == False:
     coords_to_use = []
     a = []
 
+    ### this is running everything twice or something, it's taking way to long
     for i in range(len(pairs)):
         for coords in pairs[i]:
-            if lat1 <= coords[0] <=lat2:
-                if long1 <= coords[1] <= long2:
-                    if coords[8] <= 30:
+            if coords[8] <= Minimumm_Accuracy:
+                if lat1 <= coords[0] <=lat2:
+                    if long1 <= coords[1] <= long2:
                         a.append(coords)
             
         coords_to_use.append(a)
 
-    #print(coords_to_use)
+    print(len(coords_to_use))
+
 
     img1 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
     img2 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
@@ -327,9 +341,9 @@ if Animated == False:
         else:
             speed = 0
 
-        if distance <= 1000:
-            if time_between <= 120:
-                if 0.01 <= speed <= 500:
+        if distance <= 2000:
+            if time_between <= 240:
+                if 0.01 <= speed <= 50:
                     lat_offset = math.sin(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
                     long_offset = (math.cos(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[0][i][1]-p1_long))
                     lat_offset2 = math.sin(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
@@ -337,36 +351,35 @@ if Animated == False:
 
 
                     if Draw_Line == True:
-                        
-                        draw1.line(
-                            (
-                            long_offset*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset*Resolution[1]/2+Resolution[1]/2,
-                            long_offset2*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset2*Resolution[1]/2+Resolution[1]/2
-                            ), 
-                            fill=(255, 255, 255)
-                        )
-
-                       
-
-                    else:
-                        draw1.point(
-                        (
-                        long_offset*Resolution[0]/2+Resolution[0]/2, 
-                        -lat_offset*Resolution[1]/2+Resolution[1]/2
-                        ), 
-                        fill=(0,255,0)
-                        )
+                        if time.mktime(t) >= time.mktime((2022, 11, 1, 0, 0, 0, 0, 0, 0)):
+                            draw2.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=(255,0,0)
+                            )
+                        else:
+                            draw1.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=(0,0,255)
+                            )
 
     
             
     im1arr = np.asarray(img1)
     im2arr = np.asarray(img2)
 
-    addition = im1arr
+    im = im2arr + im1arr
 
-    img = Image.fromarray(addition)
+    img = Image.fromarray(im)
 
 
-    img1.save("e:\Programming\Projects\maps\Static Render.png")
+    img.save("e:\Programming\Projects\maps\Static Render.png")
