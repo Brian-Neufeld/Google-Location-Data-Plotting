@@ -2,7 +2,7 @@ import orjson
 import math
 import time
 import datetime
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tkinter
@@ -24,24 +24,24 @@ Start_Datetime = [2017,1,1,0,0,0] # Y,M,D,H,M,S
 End_Datetime = [2023,7,28,23,59,59] # Y,M,D,H,M,S
 Draw_Line = True
 Animated = False
-Frames = 300
-Resolution = (1080*8, 1080*8)
-Minimumm_Accuracy = 12
+Frames = 365*4
+Resolution = (1080*4, 1080*4)
+Minimumm_Accuracy = 18
 p1_lat = 43.462313 
 p1_long = -80.519346  
-GPS_Data_Files = ["E:\Programming\Projects\maps\Location History 29-08-2023.json", "E:\Programming\Projects\maps\Location History 08-07-2023.json"]
+GPS_Data_Files = ["E:\Programming\Projects\maps\Location Data 2023-12-04.json"] #, "E:\Programming\Projects\maps\Location History 08-07-2023.json"]
 
 # Spline Control Points ####################
-Zoom = [100, 1, 0]
-Zoom_frames = [0, 200, 299]
-Zoom_slopes = [-1, 0, 0]
+Zoom = [2, 2]
+Zoom_frames = [0, 365*3]
+Zoom_slopes = [0, 0]
 
-Lat_center_points = [43, 43]
-Lat_center_frames = [0, 200]
+Lat_center_points = [43.462313, 43.462313]
+Lat_center_frames = [0, 365*3]
 Lat_center_slopes = [0, 0]
 
-Long_center_points = [-83, -83]
-Long_center_frames = [0, 200]
+Long_center_points = [-80.519346, -80.519346]
+Long_center_frames = [0, 365*3]
 Long_center_slopes = [0, 0]
 
 
@@ -123,7 +123,7 @@ def Long_control ():
 
         Long_cubic_coefficents[x] = solution
 
-    print(Long_cubic_coefficents)
+    #print(Long_cubic_coefficents)
 
 
 if Animated == True:
@@ -147,21 +147,14 @@ for y in range(len(location_lists)):
               
     pairs.append(a)
 
-print(len(pairs))
-print(len(pairs[0]))
-print(len(pairs[1]))
-time.sleep(1)
 
 # For an animation ####################
 if Animated == True:
     for k in range(0, Frames, 1):
-        print(k)
-        if k < 200:
-            p1_lat = 43.504650 #* k / 200
-            p1_long = -80.505161 #* k / 200
-        else:
-            p1_lat = 43.462313 
-            p1_long = -80.519346 
+        #print(k)
+        
+        p1_lat = 43.462313 
+        p1_long = -80.519346 
 
         lat_height = Zoom_level[k] #cs_lat_height(k)
         long_width = Resolution[0]/Resolution[1] * lat_height
@@ -180,116 +173,88 @@ if Animated == True:
         coords_to_use = []
         a = []
 
+        
         for i in range(len(pairs)):
             for coords in pairs[i]:
-                if lat1 <= coords[0] <=lat2:
-                    if long1 <= coords[1] <= long2:
-                        if coords[8] <= 30:
+                if coords[8] <= Minimumm_Accuracy:
+                    if lat1 <= coords[0] <=lat2:
+                        if long1 <= coords[1] <= long2:
                             a.append(coords)
-            
+                
             coords_to_use.append(a)
-
         
 
-        img1 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
-        img2 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
+        img = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
 
 
-        draw1 = ImageDraw.Draw(img1)
-        for i in range(len(coords_to_use)):
-            if i < len(coords_to_use)-1:
-                distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[i][0] - coords_to_use[i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[i][0])) * math.cos(math.radians(coords_to_use[i+1][0])) * (math.sin(math.radians(coords_to_use[i][1] - coords_to_use[i+1][1])/2)**2)))
-                t = (coords_to_use[i][2], coords_to_use[i][3], coords_to_use[i][4], coords_to_use[i][5], coords_to_use[i][6], coords_to_use[i][7], 0, 0, 0)
-                t2 = (coords_to_use[i+1][2], coords_to_use[i+1][3], coords_to_use[i+1][4], coords_to_use[i+1][5], coords_to_use[i+1][6], coords_to_use[i+1][7], 0, 0, 0)
-                #print(t)
+        draw = ImageDraw.Draw(img)
 
-                time_between = time.mktime(t2) - time.mktime(t)
-                #print(time_between)
-                if time_between <= 30:
-                    lat_offset = math.sin(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
-                    long_offset = (math.cos(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i][1]-p1_long))
+        for i in range(len(coords_to_use[0])-1):
+            distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[0][i][0] - coords_to_use[0][i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[0][i][0])) * math.cos(math.radians(coords_to_use[0][i+1][0])) * (math.sin(math.radians(coords_to_use[0][i][1] - coords_to_use[0][i+1][1])/2)**2)))
+            t = (coords_to_use[0][i][2], coords_to_use[0][i][3], coords_to_use[0][i][4], coords_to_use[0][i][5], coords_to_use[0][i][6], coords_to_use[0][i][7], 0, 0, 0)
+            t2 = (coords_to_use[0][i+1][2], coords_to_use[0][i+1][3], coords_to_use[0][i+1][4], coords_to_use[0][i+1][5], coords_to_use[0][i+1][6], coords_to_use[0][i+1][7], 0, 0, 0)
+            
+            time_between = time.mktime(t2) - time.mktime(t)
 
-                    lat_offset2 = math.sin(math.radians(coords_to_use[i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
-                    long_offset2 = (math.cos(math.radians(coords_to_use[i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i+1][1]-p1_long))
+            if time_between > 0:
+                speed = distance / time_between
+            else:
+                speed = 0
 
-                    if Draw_Line == True:
-                        print(time.mktime(t))
-                        print(time.mktime((2023, 11, 1)))
-                        time.sleep(1)
-
-                        if time.mktime(t) >= time.mktime((2023, 11, 1)):
-                            draw1.line(
-                                (
-                                long_offset*Resolution[0]/2+Resolution[0]/2, 
-                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
-                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
-                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
-                                ), 
-                                fill=(255,0,0)
-                            )
-                        else:
-                            draw1.line(
-                                (
-                                long_offset*Resolution[0]/2+Resolution[0]/2, 
-                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
-                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
-                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
-                                ), 
-                                fill=(0,0,255)
-                            )
-
-                    else:
-                        draw1.point(
-                            (
-                            long_offset*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset*Resolution[1]/2+Resolution[1]/2
-                            ), 
-                            fill=(255,255,255)
-                        )
-        '''
-        draw = ImageDraw.Draw(img1)
-        for i in range(len(coords_to_use)):
-            if i < len(coords_to_use)-1:
-                distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[i][0] - coords_to_use[i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[i][0])) * math.cos(math.radians(coords_to_use[i+1][0])) * (math.sin(math.radians(coords_to_use[i][1] - coords_to_use[i+1][1])/2)**2)))
-                t = (coords_to_use[i][2], coords_to_use[i][3], coords_to_use[i][4], coords_to_use[i][5], coords_to_use[i][6], coords_to_use[i][7], 0, 0, 0)
-                t2 = (coords_to_use[i+1][2], coords_to_use[i+1][3], coords_to_use[i+1][4], coords_to_use[i+1][5], coords_to_use[i+1][6], coords_to_use[i+1][7], 0, 0, 0)
-                #print(t)
-
-                time_between = time.mktime(t2) - time.mktime(t)
-                #print(time_between)
-                if time_between <= 30:
-                    lat_offset = math.sin(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
-                    long_offset = (math.cos(math.radians(coords_to_use[i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i][1]-p1_long))
-
-                    lat_offset2 = math.sin(math.radians(coords_to_use[i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
-                    long_offset2 = (math.cos(math.radians(coords_to_use[i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[i+1][1]-p1_long))
-
-                    if Draw_line == True:
-                        draw.line(
-                            (
-                            long_offset*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset*Resolution[1]/2+Resolution[1]/2,
-                            long_offset2*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset2*Resolution[1]/2+Resolution[1]/2
-                            ), 
-                            fill=(255,255,255)
-                        )
-
-                    else:
-                        draw.point(
-                            (
-                            long_offset*Resolution[0]/2+Resolution[0]/2, 
-                            -lat_offset*Resolution[1]/2+Resolution[1]/2
-                            ), 
-                            fill=(255,255,255)
-                        )
+            if distance <= 750:
+                if time_between <= 240:
+                    if 0.01 <= speed <= 50:
+                        lat_offset = math.sin(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
+                        long_offset = (math.cos(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[0][i][1]-p1_long))
+                        lat_offset2 = math.sin(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
+                        long_offset2 = (math.cos(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[0][i+1][1]-p1_long))
 
 
-        img.save("e:\Programming\Projects\maps\Frames\Zoom 295- accuracy" + str(k) + ".png")'''
+                        if Draw_Line == True:
+                            if (time.mktime((2020, 1, 1, 23, 59, 0, 0, 0, 0)) + 86400*k)  > time.mktime(t) > (time.mktime((2020, 1, 1, 0, 0, 0, 0, 0, 0)) + 86400*k):
+                                draw.line(
+                                    (
+                                    long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                    -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                    long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                    -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                    ), 
+                                    fill=(255,255,255)
+                                )
+                            else:
+                                if 255 >= 255 - (225 * 10 * ((((time.mktime((2020, 1, 1, 0, 0, 0, 0, 0, 0)) + 86400*k) - time.mktime(t)))/86400)) > 0:
+                                    Fill = (
+                                            round(255 - (225 * 10 * ((time.mktime((2020, 1, 1, 0, 0, 0, 0, 0, 0)) + 86400*k)-(time.mktime(t)))/86400)),
+                                            round(255 - (225 * 10 * ((time.mktime((2020, 1, 1, 0, 0, 0, 0, 0, 0)) + 86400*k)-(time.mktime(t)))/86400)),
+                                            round(255 - (225 * 10 * ((time.mktime((2020, 1, 1, 0, 0, 0, 0, 0, 0)) + 86400*k)-(time.mktime(t)))/86400)))
+                                else:
+                                    Fill = (20,20,20)
+
+                                #print(Fill)
+                                #time.sleep(0.25)
+                                
+
+                                draw.line(
+                                    (
+                                    long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                    -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                    long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                    -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                    ), 
+                                    fill = Fill 
+                                )
+
+
+        imarr = np.asarray(img)
+
+        img = Image.fromarray(imarr)
+        
+
+        img.save("e:\Programming\Projects\maps\Frames\smooth animation" + str(k) + ".png")
 
 # For a static image #################
 if Animated == False:
-    lat_height = 3
+    lat_height = 4
     long_width = Resolution[0]/Resolution[1] * lat_height
 
 
@@ -318,18 +283,25 @@ if Animated == False:
             
         coords_to_use.append(a)
 
-    print(len(coords_to_use))
+    #print(len(coords_to_use))
 
 
-    img1 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
-    img2 = Image.new('RGB', (Resolution[0], Resolution[1]), 'black')
+    img1 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
+    img2 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
+    img3 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
+    img4 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
+    img5 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
+    img6 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
 
 
     draw1 = ImageDraw.Draw(img1)
     draw2 = ImageDraw.Draw(img2)
+    draw3 = ImageDraw.Draw(img3)
+    draw4 = ImageDraw.Draw(img4)
+    draw5 = ImageDraw.Draw(img5)
+    draw6 = ImageDraw.Draw(img6)
 
     for i in range(len(coords_to_use[0])-1):
-        
         distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[0][i][0] - coords_to_use[0][i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[0][i][0])) * math.cos(math.radians(coords_to_use[0][i+1][0])) * (math.sin(math.radians(coords_to_use[0][i][1] - coords_to_use[0][i+1][1])/2)**2)))
         t = (coords_to_use[0][i][2], coords_to_use[0][i][3], coords_to_use[0][i][4], coords_to_use[0][i][5], coords_to_use[0][i][6], coords_to_use[0][i][7], 0, 0, 0)
         t2 = (coords_to_use[0][i+1][2], coords_to_use[0][i+1][3], coords_to_use[0][i+1][4], coords_to_use[0][i+1][5], coords_to_use[0][i+1][6], coords_to_use[0][i+1][7], 0, 0, 0)
@@ -341,7 +313,7 @@ if Animated == False:
         else:
             speed = 0
 
-        if distance <= 2000:
+        if distance <= 750:
             if time_between <= 240:
                 if 0.01 <= speed <= 50:
                     lat_offset = math.sin(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
@@ -349,9 +321,91 @@ if Animated == False:
                     lat_offset2 = math.sin(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
                     long_offset2 = (math.cos(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[0][i+1][1]-p1_long))
 
+                    font = ImageFont.truetype(r'c:\Users\Brian\Desktop\AdobeGothicStd-Bold.otf', 50)
+
+                    draw1.text((0,0), "speed <= " + str(round(13.8889*3.6)), fill=(0,0,255), font=font)
+                    draw2.text((0,100), str(round(13.889*3.6)) + " < speed <= " + str(round(22.2222*3.6)), fill=(0,255,0), font=font)
+                    draw3.text((0,200), str(round(22.2222*3.6)) + " < speed <= " + str(round(27.7778*3.6)), fill=(255,255,0), font=font)
+                    draw4.text((0,300), str(round(27.7778*3.6)) + " < speed <= " + str(round(33.3333*3.6)), fill=(255,127,0), font=font)
+                    draw5.text((0,400), str(round(33.3333*3.6)) + " < speed <= " + str(round(41.6667*3.6)), fill=(255,0,0), font=font)
+                    draw6.text((0,500), str(round(41.6667*3.6)) + " < speed", fill=(255,0,255), font=font)
 
                     if Draw_Line == True:
-                        if time.mktime(t) >= time.mktime((2022, 11, 1, 0, 0, 0, 0, 0, 0)):
+                        if speed <= 13.8889:
+                            Linefill = (0,0,255)
+                            draw1.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+                        
+                        elif 13.8889 < speed <= 22.2222:
+                            Linefill = (0,255,0)
+                            draw2.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+
+                        elif 22.2222 < speed <= 27.7778:
+                            Linefill = (255,255,0)
+                            draw3.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+
+                        elif 27.7778 < speed <= 33.3333:
+                            Linefill = (255,127,0)
+                            draw4.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+
+                        elif 33.3333 < speed <= 41.6667:
+                            Linefill = (255,0,0)
+                            draw5.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+
+                        elif 41.6667 < speed:
+                            Linefill = (255,0,255)
+                            draw6.line(
+                                (
+                                long_offset*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset*Resolution[1]/2+Resolution[1]/2,
+                                long_offset2*Resolution[0]/2+Resolution[0]/2, 
+                                -lat_offset2*Resolution[1]/2+Resolution[1]/2
+                                ), 
+                                fill=Linefill
+                            )
+
+                        
+
+                        '''if time.mktime(t) >= time.mktime((2022, 11, 1, 0, 0, 0, 0, 0, 0)):
                             draw2.line(
                                 (
                                 long_offset*Resolution[0]/2+Resolution[0]/2, 
@@ -370,16 +424,18 @@ if Animated == False:
                                 -lat_offset2*Resolution[1]/2+Resolution[1]/2
                                 ), 
                                 fill=(0,0,255)
-                            )
+                            )'''
 
     
             
-    im1arr = np.asarray(img1)
-    im2arr = np.asarray(img2)
-
-    im = im2arr + im1arr
-
-    img = Image.fromarray(im)
+    img = Image.alpha_composite(img1, img2)
+    img = Image.alpha_composite(img, img3)
+    img = Image.alpha_composite(img, img4)
+    img = Image.alpha_composite(img, img5)
+    img = Image.alpha_composite(img, img6)
 
 
     img.save("e:\Programming\Projects\maps\Static Render.png")
+    img1.save("e:\Programming\Projects\maps\Static Render1.png")
+    img2.save("e:\Programming\Projects\maps\Static Render2.png")
+    img3.save("e:\Programming\Projects\maps\Static Render3.png")
