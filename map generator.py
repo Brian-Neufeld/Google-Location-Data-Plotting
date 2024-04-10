@@ -20,8 +20,8 @@ Zoom_level_min = 0.005
 
 # User Settings #################################
 Max_Node_Distance = 500 # Metres
-Start_Datetime = [2017,1,1,0,0,0] # Y,M,D,H,M,S
-End_Datetime = [2025,1,1,0,0,0] # Y,M,D,H,M,S
+Start_DateTime = [2000,1,1,0,0,0] # Y,M,D,H,M,S
+End_DateTime = [2025,1,1,0,0,0] # Y,M,D,H,M,S
 Draw_Line = True
 Animated = False
 Frames = 300
@@ -177,13 +177,16 @@ if Animated == False:
     for i in range(len(points[0])):
         print(round(i/len(points[0])*100))
         z = points[0][i]
-        if z[2] == 2024:
-            if z[3] == 3:
-                if 29 <= z[4] <= 30:
-                    if z[8] <= 48:
-                        if lat1 <= z[0] <=lat2:
-                            if long1 <= z[1] <= long2:
-                                a.append(z)
+        for j in range(6):
+            if Start_DateTime[j] <= z[j+2] == End_DateTime[j]:
+                continue
+            else:
+                break   
+                
+            if z[8] <= 48:
+                if lat1 <= z[0] <=lat2:
+                    if long1 <= z[1] <= long2:
+                        a.append(z)
                 
             
     coords_to_use.append(a)
