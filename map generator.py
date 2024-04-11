@@ -20,8 +20,10 @@ Zoom_level_min = 0.005
 
 # User Settings #################################
 Max_Node_Distance = 500 # Metres
-Start_DateTime = [2000,1,1,0,0,0] # Y,M,D,H,M,S
-End_DateTime = [2025,1,1,0,0,0] # Y,M,D,H,M,S
+Start_DateTime = (2017,1,1,0,0,0) # Y,M,D,H,M,S
+Start_DateTime_Unix = time.mktime(datetime.datetime(2017,1,1,0,0,0).timetuple())
+End_DateTime = (2025,1,1,0,0,0) # Y,M,D,H,M,S
+End_DateTime_Unix = time.mktime(datetime.datetime(2025,1,1,0,0,0).timetuple())
 Draw_Line = True
 Animated = False
 Frames = 300
@@ -135,7 +137,7 @@ if Animated == True:
 
 points = []
 
-for y in range(len(location_lists)):
+'''for y in range(len(location_lists)):
     a = [(int(i["latitudeE7"])/1e7,      # Latitude
             int(i["longitudeE7"])/1e7,     # Longitude
             int((i["timestamp"][0:4])),    # Year
@@ -146,8 +148,20 @@ for y in range(len(location_lists)):
             int((i["timestamp"][17:19])), # Second
             int((i["accuracy"])))  # Accuracy 
             for i in location_lists[y] if "latitudeE7" in i.keys()]
-              
+        
+
+
+    points.append(a)'''
+
+for y in range(len(location_lists)):
+    a = [(int(i["latitudeE7"])/1e7,      # Latitude
+            int(i["longitudeE7"])/1e7,     # Longitude
+            int(time.mktime(datetime.datetime(int((i["timestamp"][0:4])), int((i["timestamp"][5:7])), int((i["timestamp"][8:10])), int((i["timestamp"][11:13])), int((i["timestamp"][14:16])), int((i["timestamp"][17:19]))).timetuple())),
+            int((i["accuracy"])))  # Accuracy 
+            for i in location_lists[y] if "latitudeE7" in i.keys()]
+    
     points.append(a)
+
 
 
 # For an animation ####################
@@ -176,14 +190,9 @@ if Animated == False:
     print("Organizing points")
     for i in range(len(points[0])):
         print(round(i/len(points[0])*100))
-        z = points[0][i]
-        for j in range(6):
-            if Start_DateTime[j] <= z[j+2] == End_DateTime[j]:
-                continue
-            else:
-                break   
-                
-            if z[8] <= 48:
+        z = points[0][i] 
+        if z[3] <= 36:
+            if Start_DateTime_Unix <= z[2] <= End_DateTime_Unix:
                 if lat1 <= z[0] <=lat2:
                     if long1 <= z[1] <= long2:
                         a.append(z)
@@ -193,7 +202,7 @@ if Animated == False:
 
 
 
-    img1 = Image.new('RGBA', (Resolution[0], Resolution[1]), (255, 255, 255, 255))
+    img1 = Image.new('RGBA', (Resolution[0], Resolution[1]), (150, 150, 150, 255))
     img2 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
     img3 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
     img4 = Image.new('RGBA', (Resolution[0], Resolution[1]), (0, 0, 0, 0))
@@ -209,20 +218,22 @@ if Animated == False:
     draw6 = ImageDraw.Draw(img6)
 
     for i in range(len(coords_to_use[0])-1):
+        if round(i/(len(coords_to_use[0])-1)*100) % 1 == 0:
+            print(round(i/(len(coords_to_use[0])-1)*100))
         distance = (2*6378.137*1000) * math.asin(math.sqrt((math.sin((math.radians(coords_to_use[0][i][0] - coords_to_use[0][i+1][0]))/2)**2) + math.cos(math.radians(coords_to_use[0][i][0])) * math.cos(math.radians(coords_to_use[0][i+1][0])) * (math.sin(math.radians(coords_to_use[0][i][1] - coords_to_use[0][i+1][1])/2)**2)))
-        t = (coords_to_use[0][i][2], coords_to_use[0][i][3], coords_to_use[0][i][4], coords_to_use[0][i][5], coords_to_use[0][i][6], coords_to_use[0][i][7], 0, 0, 0)
-        t2 = (coords_to_use[0][i+1][2], coords_to_use[0][i+1][3], coords_to_use[0][i+1][4], coords_to_use[0][i+1][5], coords_to_use[0][i+1][6], coords_to_use[0][i+1][7], 0, 0, 0)
+        t = coords_to_use[0][i][2]
+        t2 = coords_to_use[0][i+1][2]
         
-        time_between = time.mktime(t2) - time.mktime(t)
+        time_between = t2 - t
 
         if time_between > 0:
             speed = distance / time_between
         else:
             speed = 0
 
-        if distance <= 10000000:
-            if time_between <= 10000000:
-                if 0.001 <= speed <= 1000000:
+        if distance <= 750:
+            if time_between <= 240:
+                if 0.001 <= speed <= 100:
                     lat_offset = math.sin(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
                     long_offset = (math.cos(math.radians(coords_to_use[0][i][0]-p1_lat)) / math.sin(math.radians(lat_height/2))) * math.sin(math.radians(coords_to_use[0][i][1]-p1_long))
                     lat_offset2 = math.sin(math.radians(coords_to_use[0][i+1][0]-p1_lat)) / math.sin(math.radians(lat_height/2))
@@ -230,15 +241,15 @@ if Animated == False:
 
                     font = ImageFont.truetype(r'c:\Users\Brian\Desktop\AdobeGothicStd-Bold.otf', 50)
 
-                    draw1.text((0,0), "speed <= " + str(round(38.888*3.6)), fill=(0,0,255), font=font)
-                    draw2.text((0,100), str(round(38.888*3.6)) + " < speed <= " + str(round(41.666*3.6)), fill=(0,255,0), font=font)
-                    draw3.text((0,200), str(round(41.666*3.6)) + " < speed <= " + str(round(44.444*3.6)), fill=(255,255,0), font=font)
-                    draw4.text((0,300), str(round(44.444*3.6)) + " < speed <= " + str(round(47.222*3.6)), fill=(255,127,0), font=font)
-                    draw5.text((0,400), str(round(47.222*3.6)) + " < speed <= " + str(round(50*3.6)), fill=(255,0,0), font=font)
-                    draw6.text((0,500), str(round(50*3.6)) + " < speed", fill=(255,0,255), font=font)
+                    draw1.text((0,0), "speed <= " + str(round(20*3.6)), fill=(0,0,255), font=font)
+                    draw2.text((0,100), str(round(20*3.6)) + " < speed <= " + str(round(25*3.6)), fill=(0,255,0), font=font)
+                    draw3.text((0,200), str(round(25*3.6)) + " < speed <= " + str(round(30*3.6)), fill=(255,255,0), font=font)
+                    draw4.text((0,300), str(round(30*3.6)) + " < speed <= " + str(round(35*3.6)), fill=(255,127,0), font=font)
+                    draw5.text((0,400), str(round(35*3.6)) + " < speed <= " + str(round(40*3.6)), fill=(255,0,0), font=font)
+                    draw6.text((0,500), str(round(40*3.6)) + " < speed", fill=(255,0,255), font=font)
 
                     if Draw_Line == True:
-                        if speed <= 38.888:
+                        if speed <= 20:
                             Linefill = (0,0,255)
                             draw1.line(
                                 (
@@ -250,7 +261,7 @@ if Animated == False:
                                 fill=Linefill
                             )
                         
-                        elif 38.888 < speed <= 41.666:
+                        elif 20 < speed <= 25:
                             Linefill = (0,255,0)
                             draw2.line(
                                 (
@@ -262,7 +273,7 @@ if Animated == False:
                                 fill=Linefill
                             )
 
-                        elif 41.666 < speed <= 44.444:
+                        elif 25 < speed <= 30:
                             Linefill = (255,255,0)
                             draw3.line(
                                 (
@@ -274,7 +285,7 @@ if Animated == False:
                                 fill=Linefill
                             )
 
-                        elif 44.444 < speed <= 47.222:
+                        elif 30 < speed <= 35:
                             Linefill = (255,127,0)
                             draw4.line(
                                 (
@@ -286,7 +297,7 @@ if Animated == False:
                                 fill=Linefill
                             )
 
-                        elif 47.222 < speed <= 50:
+                        elif 35 < speed <= 40:
                             Linefill = (255,0,0)
                             draw5.line(
                                 (
@@ -298,7 +309,7 @@ if Animated == False:
                                 fill=Linefill
                             )
 
-                        elif 50 < speed:
+                        elif 45 < speed:
                             Linefill = (255,0,255)
                             draw6.line(
                                 (
